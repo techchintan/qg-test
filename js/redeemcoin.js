@@ -46,7 +46,7 @@ document.getElementById("earnCoinBtn").addEventListener("click", function () {
     resetAdState();
   }, 7000);
 
-  initializeAds(9389057744, (rewardedAd) => {
+  initializeAds(8597806557, (rewardedAd) => {
     if (rewardedAd) {
       clearTimeout(adTimeout);
       rewardedAd.show((result) => {
@@ -214,7 +214,7 @@ function showOopsPopup() {
 
     adLoading = true;
 
-    initializeAds(9389057744, (rewardedAd) => {
+    initializeAds(8597806557, (rewardedAd) => {
       if (rewardedAd) {
         clearTimeout(adTimeout);
         rewardedAd.show((result) => {
