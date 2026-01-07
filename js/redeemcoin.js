@@ -84,73 +84,97 @@ function initializeAds(callback) {
   currentAdCallback = callback;
   adResultStatus = null;
   
-  // Check if Ad Placement API is available (included in AdSense script)
-  if (typeof adBreak === 'undefined') {
-    console.warn("Ad Placement API not loaded. Make sure AdSense script is loaded with data-adbreak-test attribute.");
-    callback(null);
-    return;
+  // Wait for Ad Placement API to be available (included in AdSense script)
+  // The API functions are initialized after the AdSense script loads
+  let checkAttempts = 0;
+  const maxAttempts = 50; // Wait up to 5 seconds (50 * 100ms)
+  
+  function checkAdBreak() {
+    if (typeof adBreak !== 'undefined' && typeof adConfig !== 'undefined') {
+      // Ad Placement API is ready
+      showRewardedAd();
+    } else {
+      checkAttempts++;
+      if (checkAttempts >= maxAttempts) {
+        // Timeout - Ad Placement API not available
+        console.warn("Ad Placement API not loaded after timeout. Make sure AdSense script is loaded with data-adbreak-test attribute.");
+        if (currentAdCallback) {
+          currentAdCallback(null);
+          currentAdCallback = null;
+        }
+        resetAdState();
+      } else {
+        // Wait a bit more for the API to initialize
+        setTimeout(checkAdBreak, 100);
+      }
+    }
   }
-
-  // Use adBreak with 'reward' placement type for rewarded ads
-  // This follows the pattern from: https://developers.google.com/ad-placement/docs/example
-  adBreak({
-    type: 'reward',  // Rewarded ad placement type
-    name: 'earn-coins',
-    beforeReward: (showAdFn) => {
-      // Rewarded ad is available - call showAdFn to display it
-      // showAdFn must be called as part of a direct user action
-      if (showAdFn) {
-        try {
-          showAdFn(); // This shows the ad immediately
-        } catch (error) {
-          console.warn("Error showing rewarded ad:", error);
+  
+  function showRewardedAd() {
+    // Use adBreak with 'reward' placement type for rewarded ads
+    // This follows the pattern from: https://developers.google.com/ad-placement/docs/example
+    adBreak({
+      type: 'reward',  // Rewarded ad placement type
+      name: 'earn-coins',
+      beforeReward: (showAdFn) => {
+        // Rewarded ad is available - call showAdFn to display it
+        // showAdFn must be called as part of a direct user action
+        if (showAdFn) {
+          try {
+            showAdFn(); // This shows the ad immediately
+          } catch (error) {
+            console.warn("Error showing rewarded ad:", error);
+            if (currentAdCallback) {
+              currentAdCallback(null);
+              currentAdCallback = null;
+            }
+          }
+        } else {
+          // No ad available
           if (currentAdCallback) {
             currentAdCallback(null);
             currentAdCallback = null;
           }
         }
-      } else {
-        // No ad available
+      },
+      beforeAd: () => {
+        // Called before ad is shown - can disable buttons, mute sound, etc.
+      },
+      adViewed: () => {
+        // Ad was fully viewed - user earned the reward
+        adResultStatus = "viewed";
         if (currentAdCallback) {
-          currentAdCallback(null);
+          // Return a mock object compatible with existing code structure
+          currentAdCallback({
+            show: function(resultCallback) {
+              resultCallback({ status: "viewed", rewardEarned: true });
+            }
+          });
           currentAdCallback = null;
         }
+      },
+      adDismissed: () => {
+        // Ad was dismissed without earning reward
+        adResultStatus = "dismissed";
+        if (currentAdCallback) {
+          // Return a mock object compatible with existing code structure
+          currentAdCallback({
+            show: function(resultCallback) {
+              resultCallback({ status: "dismissed", rewardEarned: false });
+            }
+          });
+          currentAdCallback = null;
+        }
+      },
+      afterAd: () => {
+        // Called after ad is dismissed - can re-enable buttons, unmute sound, etc.
+        resetAdState();
       }
-    },
-    beforeAd: () => {
-      // Called before ad is shown - can disable buttons, mute sound, etc.
-    },
-    adViewed: () => {
-      // Ad was fully viewed - user earned the reward
-      adResultStatus = "viewed";
-      if (currentAdCallback) {
-        // Return a mock object compatible with existing code structure
-        currentAdCallback({
-          show: function(resultCallback) {
-            resultCallback({ status: "viewed", rewardEarned: true });
-          }
-        });
-        currentAdCallback = null;
-      }
-    },
-    adDismissed: () => {
-      // Ad was dismissed without earning reward
-      adResultStatus = "dismissed";
-      if (currentAdCallback) {
-        // Return a mock object compatible with existing code structure
-        currentAdCallback({
-          show: function(resultCallback) {
-            resultCallback({ status: "dismissed", rewardEarned: false });
-          }
-        });
-        currentAdCallback = null;
-      }
-    },
-    afterAd: () => {
-      // Called after ad is dismissed - can re-enable buttons, unmute sound, etc.
-      resetAdState();
-    }
-  });
+    });
+  }
+  
+  // Start checking for Ad Placement API availability
+  checkAdBreak();
 }
 
 /* ---------------- GAME SECTION CLICK ---------------- */
