@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (typeof adConfig !== 'undefined') {
     adConfig({
       sound: 'on',  // Sound is enabled in the game
-      preloadAdBreaks: 'auto'  // Automatically preload ads
+      preloadAdBreaks: 'on'  // Automatically preload ads
     });
   }
 });
