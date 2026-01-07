@@ -6,6 +6,8 @@ let adCurrentlyShowing = false; // Track if ad is actively showing
 let adTimeout = null; // Store timeout reference
 let currentButtonElement = null; // Track which button triggered the ad
 let currentButtonOriginalText = null; // Store original button text
+let adWasViewed = false; // Track if ad was successfully viewed (prevents premature state reset)
+let skipBtn = null; // Store skip button reference for popup
 
 /* ---------------- SAFE LOCALSTORAGE HELPERS ---------------- */
 function safeGetItem(key) {
@@ -57,6 +59,7 @@ if (earnCoinBtn) {
     earnBtn.innerHTML = "Loading Ad... ⏳";
     earnBtn.disabled = true;
     adLoading = true;
+    adWasViewed = false; // Reset flag for new ad
 
     // Set timeout for ad loading - will be cleared when ad actually starts showing
     adTimeout = setTimeout(() => {
@@ -121,23 +124,39 @@ if (earnCoinBtn) {
       },
       adViewed: () => {
         // Ad was fully viewed - player earned the reward
+        adWasViewed = true;
         addCoins(10);
         showToast();
+        // Delay state reset to ensure ad is fully closed (important for longer ads)
+        setTimeout(() => {
+          adCurrentlyShowing = false;
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
+        }, 1000); // Increased delay for longer ads (30+ seconds)
       },
       adDismissed: () => {
         // Ad was dismissed before completion - player did not earn reward
         console.log("Ad skipped or closed early.");
+        // Don't reset state immediately - wait for afterAd
       },
       afterAd: () => {
         // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
-        adCurrentlyShowing = false;
-        if (currentButtonElement) {
-          currentButtonElement.innerHTML = currentButtonOriginalText;
-          currentButtonElement.disabled = false;
+        // Only reset if ad wasn't viewed (if viewed, adViewed callback handles it)
+        if (!adWasViewed) {
+          adCurrentlyShowing = false;
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
         }
-        resetAdState();
-        currentButtonElement = null;
-        currentButtonOriginalText = null;
       },
       adBreakDone: (placementInfo) => {
         // Always called even if an ad wasn't shown
@@ -236,6 +255,7 @@ function addCoins(amount) {
 function resetAdState() {
   adLoading = false;
   adCurrentlyShowing = false;
+  adWasViewed = false;
   if (adResetTimer) {
     clearTimeout(adResetTimer);
     adResetTimer = null;
@@ -273,7 +293,7 @@ function showOopsPopup() {
   console.log("Popup opened:"); // Debug log for Clarity
 
   const watchBtn = document.getElementById("watchAdBtn");
-  const skipBtn = document.getElementById("skipBtn");
+  skipBtn = document.getElementById("skipBtn");
   const originalText = watchBtn.innerHTML;
 
   /* Skip handler */
@@ -285,6 +305,7 @@ function showOopsPopup() {
     }
     if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
     closeOopsPopup();
+    skipBtn = null;
   });
 
   /* Watch Ad handler */
@@ -297,6 +318,7 @@ function showOopsPopup() {
     skipBtn.disabled = true;
     currentButtonElement = watchBtn;
     currentButtonOriginalText = originalText;
+    adWasViewed = false; // Reset flag for new ad
 
     // Set timeout for ad loading - will be cleared when ad actually starts showing
     adTimeout = setTimeout(() => {
@@ -370,35 +392,54 @@ function showOopsPopup() {
       },
       adViewed: () => {
         // Ad was fully viewed - player earned the reward
+        adWasViewed = true;
         addCoins(10);
         showToast();
-        // Wait a bit for ad to fully close before redirecting
+        // Wait longer for ad to fully close before redirecting (important for 30+ second ads)
         setTimeout(() => {
           // User earned coins, now redirect to game
-          if (window.clickedGameUrl && !adCurrentlyShowing) {
+          if (window.clickedGameUrl) {
             window.location.href = window.clickedGameUrl;
           }
           closeOopsPopup();
-        }, 500); // Small delay to ensure ad is fully closed
+          // Reset state after redirect is initiated
+          adCurrentlyShowing = false;
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          if (skipBtn) {
+            skipBtn.disabled = false;
+          }
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
+          skipBtn = null;
+        }, 1500); // Increased delay for longer ads (30+ seconds) to ensure ad is fully closed
       },
       adDismissed: () => {
         // Ad was dismissed before completion - player did not earn reward
         // Don't redirect - let user decide what to do
         console.log("Ad dismissed - no reward earned");
+        // Don't reset state immediately - wait for afterAd
       },
       afterAd: () => {
         // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
-        adCurrentlyShowing = false;
-        if (currentButtonElement) {
-          currentButtonElement.innerHTML = currentButtonOriginalText;
-          currentButtonElement.disabled = false;
+        // Only reset if ad wasn't viewed (if viewed, adViewed callback handles it)
+        if (!adWasViewed) {
+          adCurrentlyShowing = false;
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          if (skipBtn) {
+            skipBtn.disabled = false;
+          }
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
+          skipBtn = null;
         }
-        if (skipBtn) {
-          skipBtn.disabled = false;
-        }
-        resetAdState();
-        currentButtonElement = null;
-        currentButtonOriginalText = null;
       },
       adBreakDone: (placementInfo) => {
         // Always called even if an ad wasn't shown
@@ -421,6 +462,7 @@ function showOopsPopup() {
           resetAdState();
           currentButtonElement = null;
           currentButtonOriginalText = null;
+          skipBtn = null;
         }
       }
     });
@@ -430,4 +472,5 @@ function showOopsPopup() {
 function closeOopsPopup() {
   const popup = document.getElementById("oopsPopup");
   if (popup) popup.remove();
+  skipBtn = null;
 }
