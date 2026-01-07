@@ -32,13 +32,13 @@ document.addEventListener("DOMContentLoaded", function () {
   const userCoins = parseInt(safeGetItem("coins")) || 0;
   const coinEl = document.getElementById("coin");
   if (coinEl) coinEl.textContent = userCoins;
-  
+
   // Initialize Ad Placement API configuration
   // Reference: https://developers.google.com/ad-placement/apis
-  if (typeof adConfig !== 'undefined') {
+  if (typeof adConfig !== "undefined") {
     adConfig({
-      sound: 'on',  // Sound is enabled in the game
-      preloadAdBreaks: 'on'  // Automatically preload ads
+      sound: "on", // Sound is enabled in the game
+      preloadAdBreaks: "on", // Automatically preload ads
     });
   }
 });
@@ -75,8 +75,10 @@ if (earnCoinBtn) {
     }, 7000);
 
     // Check if Ad Placement API is initialized
-    if (typeof adBreak === 'undefined') {
-      console.warn("Ad Placement API not initialized. Make sure the initialization script is included in the HTML head.");
+    if (typeof adBreak === "undefined") {
+      console.warn(
+        "Ad Placement API not initialized. Make sure the initialization script is included in the HTML head."
+      );
       if (adTimeout) {
         clearTimeout(adTimeout);
         adTimeout = null;
@@ -92,8 +94,8 @@ if (earnCoinBtn) {
 
     // Use adBreak directly for rewarded ads
     adBreak({
-      type: 'reward',
-      name: 'earn-coins',
+      type: "reward",
+      name: "earn-coins",
       beforeReward: (showAdFn) => {
         // Rewarded ad is available - showAdFn must be called as part of a direct user action
         if (showAdFn) {
@@ -176,11 +178,10 @@ if (earnCoinBtn) {
           currentButtonElement = null;
           currentButtonOriginalText = null;
         }
-      }
+      },
     });
   });
 }
-
 
 /* ---------------- GAME SECTION CLICK ---------------- */
 document.querySelectorAll(".game_section2").forEach((section) => {
@@ -312,7 +313,7 @@ function showOopsPopup() {
   watchBtn.addEventListener("click", function () {
     // Prevent multiple clicks while ad is loading/showing
     if (adLoading || adCurrentlyShowing) return;
-    
+
     watchBtn.innerHTML = "Loading Ad... ⏳";
     watchBtn.disabled = true;
     skipBtn.disabled = true;
@@ -338,8 +339,10 @@ function showOopsPopup() {
     adLoading = true;
 
     // Check if Ad Placement API is initialized
-    if (typeof adBreak === 'undefined') {
-      console.warn("Ad Placement API not initialized. Make sure the initialization script is included in the HTML head.");
+    if (typeof adBreak === "undefined") {
+      console.warn(
+        "Ad Placement API not initialized. Make sure the initialization script is included in the HTML head."
+      );
       if (adTimeout) {
         clearTimeout(adTimeout);
         adTimeout = null;
@@ -357,8 +360,8 @@ function showOopsPopup() {
 
     // Use adBreak directly for rewarded ads
     adBreak({
-      type: 'reward',
-      name: 'earn-coins-popup',
+      type: "reward",
+      name: "earn-coins-popup",
       beforeReward: (showAdFn) => {
         // Rewarded ad is available - showAdFn must be called as part of a direct user action
         if (showAdFn) {
@@ -373,7 +376,8 @@ function showOopsPopup() {
             watchBtn.innerHTML = originalText;
             watchBtn.disabled = false;
             skipBtn.disabled = false;
-            if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
+            if (window.clickedGameUrl)
+              window.location.href = window.clickedGameUrl;
             closeOopsPopup();
             resetAdState();
             currentButtonElement = null;
@@ -457,14 +461,15 @@ function showOopsPopup() {
           if (skipBtn) {
             skipBtn.disabled = false;
           }
-          if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
+          if (window.clickedGameUrl)
+            window.location.href = window.clickedGameUrl;
           closeOopsPopup();
           resetAdState();
           currentButtonElement = null;
           currentButtonOriginalText = null;
           skipBtn = null;
         }
-      }
+      },
     });
   });
 }
