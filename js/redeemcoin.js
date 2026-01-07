@@ -28,47 +28,50 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 /* ---------------- EARN COINS BUTTON ---------------- */
-document.getElementById("earnCoinBtn").addEventListener("click", function () {
-  if (adLoading) return;
+const earnCoinBtn = document.getElementById("earnCoinBtn");
+if (earnCoinBtn) {
+  earnCoinBtn.addEventListener("click", function () {
+    if (adLoading) return;
 
-  const earnBtn = document.getElementById("earnCoinBtn");
-  const originalText = earnBtn.innerHTML;
+    const earnBtn = document.getElementById("earnCoinBtn");
+    const originalText = earnBtn.innerHTML;
 
-  // Show loading state
-  earnBtn.innerHTML = "Loading Ad... ⏳";
-  earnBtn.disabled = true;
-  adLoading = true;
+    // Show loading state
+    earnBtn.innerHTML = "Loading Ad... ⏳";
+    earnBtn.disabled = true;
+    adLoading = true;
 
-  let adTimeout = setTimeout(() => {
-    earnBtn.innerHTML = originalText;
-    earnBtn.disabled = false;
-    ErrorToast();
-    resetAdState();
-  }, 7000);
+    let adTimeout = setTimeout(() => {
+      earnBtn.innerHTML = originalText;
+      earnBtn.disabled = false;
+      ErrorToast();
+      resetAdState();
+    }, 7000);
 
-  initializeAds(8597806557, (rewardedAd) => {
-    if (rewardedAd) {
-      clearTimeout(adTimeout);
-      rewardedAd.show((result) => {
-        if (result && result.status === "viewed") {
-          addCoins(10);
-          showToast();
-        } else {
-          console.log("Ad skipped or closed early.");
-        }
+    initializeAds(8597806557, (rewardedAd) => {
+      if (rewardedAd) {
+        clearTimeout(adTimeout);
+        rewardedAd.show((result) => {
+          if (result && result.status === "viewed") {
+            addCoins(10);
+            showToast();
+          } else {
+            console.log("Ad skipped or closed early.");
+          }
 
+          earnBtn.innerHTML = originalText;
+          earnBtn.disabled = false;
+          resetAdState();
+        });
+      } else {
+        clearTimeout(adTimeout);
         earnBtn.innerHTML = originalText;
         earnBtn.disabled = false;
         resetAdState();
-      });
-    } else {
-      clearTimeout(adTimeout);
-      earnBtn.innerHTML = originalText;
-      earnBtn.disabled = false;
-      resetAdState();
-    }
+      }
+    });
   });
-});
+}
 
 /* ---------------- AD INITIALIZER ---------------- */
 function initializeAds(adSlot, callback) {
