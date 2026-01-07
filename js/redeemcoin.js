@@ -3,6 +3,8 @@ let adResetTimer = null;
 let clickedGameUrl = null;
 let adCurrentlyShowing = false; // Track if ad is actively showing
 let adTimeout = null; // Store timeout reference
+let currentButtonElement = null; // Track which button triggered the ad
+let currentButtonOriginalText = null; // Store original button text
 
 /* ---------------- SAFE LOCALSTORAGE HELPERS ---------------- */
 function safeGetItem(key) {
@@ -47,6 +49,8 @@ if (earnCoinBtn) {
 
     const earnBtn = document.getElementById("earnCoinBtn");
     const originalText = earnBtn.innerHTML;
+    currentButtonElement = earnBtn;
+    currentButtonOriginalText = originalText;
 
     // Show loading state
     earnBtn.innerHTML = "Loading Ad... ⏳";
@@ -61,145 +65,102 @@ if (earnCoinBtn) {
         earnBtn.disabled = false;
         ErrorToast();
         resetAdState();
+        currentButtonElement = null;
+        currentButtonOriginalText = null;
       }
     }, 7000);
 
-    initializeAds((rewardedAd) => {
-      if (rewardedAd) {
-        // Clear timeout since ad is available
-        if (adTimeout) {
-          clearTimeout(adTimeout);
-          adTimeout = null;
-        }
-        rewardedAd.show((result) => {
-          if (result && result.status === "viewed") {
-            addCoins(10);
-            showToast();
-          } else {
-            console.log("Ad skipped or closed early.");
-          }
+    // Check if Ad Placement API is initialized
+    if (typeof adBreak === 'undefined') {
+      console.warn("Ad Placement API not initialized. Make sure the initialization script is included in the HTML head.");
+      if (adTimeout) {
+        clearTimeout(adTimeout);
+        adTimeout = null;
+      }
+      earnBtn.innerHTML = originalText;
+      earnBtn.disabled = false;
+      ErrorToast();
+      resetAdState();
+      currentButtonElement = null;
+      currentButtonOriginalText = null;
+      return;
+    }
 
-          earnBtn.innerHTML = originalText;
-          earnBtn.disabled = false;
-          resetAdState();
-        });
-      } else {
-        // No ad available
+    // Use adBreak directly for rewarded ads
+    adBreak({
+      type: 'reward',
+      name: 'earn-coins',
+      beforeReward: (showAdFn) => {
+        // Rewarded ad is available - showAdFn must be called as part of a direct user action
+        if (showAdFn) {
+          try {
+            showAdFn(); // This triggers the ad to show
+          } catch (error) {
+            console.warn("Error showing rewarded ad:", error);
+            if (adTimeout) {
+              clearTimeout(adTimeout);
+              adTimeout = null;
+            }
+            earnBtn.innerHTML = originalText;
+            earnBtn.disabled = false;
+            resetAdState();
+            currentButtonElement = null;
+            currentButtonOriginalText = null;
+          }
+        }
+      },
+      beforeAd: () => {
+        // Called before ad is shown - pause game, mute sound, disable buttons
+        adCurrentlyShowing = true;
+        // Clear any pending timeout since ad is now showing
         if (adTimeout) {
           clearTimeout(adTimeout);
           adTimeout = null;
         }
-        earnBtn.innerHTML = originalText;
-        earnBtn.disabled = false;
+      },
+      adViewed: () => {
+        // Ad was fully viewed - player earned the reward
+        addCoins(10);
+        showToast();
+      },
+      adDismissed: () => {
+        // Ad was dismissed before completion - player did not earn reward
+        console.log("Ad skipped or closed early.");
+      },
+      afterAd: () => {
+        // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
+        adCurrentlyShowing = false;
+        if (currentButtonElement) {
+          currentButtonElement.innerHTML = currentButtonOriginalText;
+          currentButtonElement.disabled = false;
+        }
         resetAdState();
+        currentButtonElement = null;
+        currentButtonOriginalText = null;
+      },
+      adBreakDone: (placementInfo) => {
+        // Always called even if an ad wasn't shown
+        // If no ad was available, this is the only callback that fires
+        if (!adCurrentlyShowing && adLoading) {
+          // No ad was shown - clear timeout and reset
+          if (adTimeout) {
+            clearTimeout(adTimeout);
+            adTimeout = null;
+          }
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          ErrorToast();
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
+        }
       }
     });
   });
 }
 
-/* ---------------- AD INITIALIZER ---------------- */
-// Using Google Ad Placement API for HTML5 games
-// Reference: https://developers.google.com/ad-placement/docs/example
-let currentAdCallback = null;
-let adResultStatus = null;
-
-function initializeAds(callback) {
-  adLoading = true;
-  currentAdCallback = callback;
-  adResultStatus = null;
-  
-  // Check if Ad Placement API is initialized
-  // The adBreak function should be available after the initialization script runs
-  if (typeof adBreak === 'undefined') {
-    console.warn("Ad Placement API not initialized. Make sure the initialization script is included in the HTML head.");
-    callback(null);
-    resetAdState();
-    return;
-  }
-
-  // Use adBreak with 'reward' placement type for rewarded ads
-  // Reference: https://developers.google.com/ad-placement/apis
-  // adBreak() is asynchronous and returns immediately
-  // If no ad is available, none of the callbacks are called
-  adBreak({
-    type: 'reward',  // Rewarded ad placement type
-    name: 'earn-coins',
-    beforeReward: (showAdFn) => {
-      // Rewarded ad is available - showAdFn must be called as part of a direct user action
-      // Since user already clicked the button, we can call showAdFn() immediately
-      if (showAdFn) {
-        try {
-          showAdFn(); // This triggers the ad to show
-        } catch (error) {
-          console.warn("Error showing rewarded ad:", error);
-          if (currentAdCallback) {
-            currentAdCallback(null);
-            currentAdCallback = null;
-          }
-          resetAdState();
-        }
-      }
-    },
-    beforeAd: () => {
-      // Called before ad is shown - pause game, mute sound, disable buttons
-      // This is synchronous - API won't show ad until this returns
-      adCurrentlyShowing = true;
-      // Clear any pending timeout since ad is now showing
-      if (adTimeout) {
-        clearTimeout(adTimeout);
-        adTimeout = null;
-      }
-    },
-    adViewed: () => {
-      // Ad was fully viewed - player earned the reward
-      adResultStatus = "viewed";
-      if (currentAdCallback) {
-        // Return a mock object compatible with existing code structure
-        currentAdCallback({
-          show: function(resultCallback) {
-            resultCallback({ status: "viewed", rewardEarned: true });
-          }
-        });
-        currentAdCallback = null;
-      }
-    },
-    adDismissed: () => {
-      // Ad was dismissed before completion - player did not earn reward
-      adResultStatus = "dismissed";
-      if (currentAdCallback) {
-        // Return a mock object compatible with existing code structure
-        currentAdCallback({
-          show: function(resultCallback) {
-            resultCallback({ status: "dismissed", rewardEarned: false });
-          }
-        });
-        currentAdCallback = null;
-      }
-    },
-    afterAd: () => {
-      // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
-      // Only called if an ad was actually shown
-      adCurrentlyShowing = false;
-      resetAdState();
-    },
-    adBreakDone: (placementInfo) => {
-      // Always called (if provided) even if an ad wasn't shown
-      // Can be used for analytics/logging
-      // If no ad was available, this is the only callback that fires
-      if (!adResultStatus && currentAdCallback) {
-        // No ad was shown - none of the other callbacks were called
-        // Clear timeout since no ad will be shown
-        if (adTimeout) {
-          clearTimeout(adTimeout);
-          adTimeout = null;
-        }
-        currentAdCallback(null);
-        currentAdCallback = null;
-        resetAdState();
-      }
-    }
-  });
-}
 
 /* ---------------- GAME SECTION CLICK ---------------- */
 document.querySelectorAll(".game_section2").forEach((section) => {
@@ -333,6 +294,8 @@ function showOopsPopup() {
     watchBtn.innerHTML = "Loading Ad... ⏳";
     watchBtn.disabled = true;
     skipBtn.disabled = true;
+    currentButtonElement = watchBtn;
+    currentButtonOriginalText = originalText;
 
     // Set timeout for ad loading - will be cleared when ad actually starts showing
     adTimeout = setTimeout(() => {
@@ -344,47 +307,120 @@ function showOopsPopup() {
         if (clickedGameUrl) window.location.href = clickedGameUrl;
         closeOopsPopup();
         resetAdState();
+        currentButtonElement = null;
+        currentButtonOriginalText = null;
       }
     }, 7000);
 
     adLoading = true;
 
-    initializeAds((rewardedAd) => {
-      if (rewardedAd) {
-        // Clear timeout since ad is available
-        if (adTimeout) {
-          clearTimeout(adTimeout);
-          adTimeout = null;
-        }
-        rewardedAd.show((result) => {
-          // Wait a bit for ad to fully close before redirecting
-          setTimeout(() => {
-            // Only redirect if ad was viewed (user earned coins)
-            // Don't redirect if ad was dismissed - let user try again or skip
-            if (result && result.status === "viewed") {
-              // User earned coins, now redirect to game
-              if (clickedGameUrl && !adCurrentlyShowing) {
-                window.location.href = clickedGameUrl;
-              }
+    // Check if Ad Placement API is initialized
+    if (typeof adBreak === 'undefined') {
+      console.warn("Ad Placement API not initialized. Make sure the initialization script is included in the HTML head.");
+      if (adTimeout) {
+        clearTimeout(adTimeout);
+        adTimeout = null;
+      }
+      watchBtn.innerHTML = originalText;
+      watchBtn.disabled = false;
+      skipBtn.disabled = false;
+      if (clickedGameUrl) window.location.href = clickedGameUrl;
+      closeOopsPopup();
+      resetAdState();
+      currentButtonElement = null;
+      currentButtonOriginalText = null;
+      return;
+    }
+
+    // Use adBreak directly for rewarded ads
+    adBreak({
+      type: 'reward',
+      name: 'earn-coins-popup',
+      beforeReward: (showAdFn) => {
+        // Rewarded ad is available - showAdFn must be called as part of a direct user action
+        if (showAdFn) {
+          try {
+            showAdFn(); // This triggers the ad to show
+          } catch (error) {
+            console.warn("Error showing rewarded ad:", error);
+            if (adTimeout) {
+              clearTimeout(adTimeout);
+              adTimeout = null;
             }
-            // If ad was dismissed, don't redirect - let user decide what to do
-            closeOopsPopup();
             watchBtn.innerHTML = originalText;
             watchBtn.disabled = false;
             skipBtn.disabled = false;
+            if (clickedGameUrl) window.location.href = clickedGameUrl;
+            closeOopsPopup();
             resetAdState();
-          }, 500); // Small delay to ensure ad is fully closed
-        });
-      } else {
-        // No ad available
+            currentButtonElement = null;
+            currentButtonOriginalText = null;
+          }
+        }
+      },
+      beforeAd: () => {
+        // Called before ad is shown - pause game, mute sound, disable buttons
+        adCurrentlyShowing = true;
+        // Clear any pending timeout since ad is now showing
         if (adTimeout) {
           clearTimeout(adTimeout);
           adTimeout = null;
         }
-        watchBtn.innerHTML = originalText;
-        watchBtn.disabled = false;
-        skipBtn.disabled = false;
+      },
+      adViewed: () => {
+        // Ad was fully viewed - player earned the reward
+        addCoins(10);
+        showToast();
+        // Wait a bit for ad to fully close before redirecting
+        setTimeout(() => {
+          // User earned coins, now redirect to game
+          if (clickedGameUrl && !adCurrentlyShowing) {
+            window.location.href = clickedGameUrl;
+          }
+          closeOopsPopup();
+        }, 500); // Small delay to ensure ad is fully closed
+      },
+      adDismissed: () => {
+        // Ad was dismissed before completion - player did not earn reward
+        // Don't redirect - let user decide what to do
+        console.log("Ad dismissed - no reward earned");
+      },
+      afterAd: () => {
+        // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
+        adCurrentlyShowing = false;
+        if (currentButtonElement) {
+          currentButtonElement.innerHTML = currentButtonOriginalText;
+          currentButtonElement.disabled = false;
+        }
+        if (skipBtn) {
+          skipBtn.disabled = false;
+        }
         resetAdState();
+        currentButtonElement = null;
+        currentButtonOriginalText = null;
+      },
+      adBreakDone: (placementInfo) => {
+        // Always called even if an ad wasn't shown
+        // If no ad was available, this is the only callback that fires
+        if (!adCurrentlyShowing && adLoading) {
+          // No ad was shown - clear timeout and redirect
+          if (adTimeout) {
+            clearTimeout(adTimeout);
+            adTimeout = null;
+          }
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          if (skipBtn) {
+            skipBtn.disabled = false;
+          }
+          if (clickedGameUrl) window.location.href = clickedGameUrl;
+          closeOopsPopup();
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
+        }
       }
     });
   });
