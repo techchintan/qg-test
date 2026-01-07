@@ -1,6 +1,8 @@
 let adLoading = false;
 let adResetTimer = null;
 let clickedGameUrl = null;
+let adCurrentlyShowing = false; // Track if ad is actively showing
+let adTimeout = null; // Store timeout reference
 
 /* ---------------- SAFE LOCALSTORAGE HELPERS ---------------- */
 function safeGetItem(key) {
@@ -40,7 +42,8 @@ document.addEventListener("DOMContentLoaded", function () {
 const earnCoinBtn = document.getElementById("earnCoinBtn");
 if (earnCoinBtn) {
   earnCoinBtn.addEventListener("click", function () {
-    if (adLoading) return;
+    // Prevent multiple clicks while ad is loading/showing
+    if (adLoading || adCurrentlyShowing) return;
 
     const earnBtn = document.getElementById("earnCoinBtn");
     const originalText = earnBtn.innerHTML;
@@ -50,16 +53,24 @@ if (earnCoinBtn) {
     earnBtn.disabled = true;
     adLoading = true;
 
-    let adTimeout = setTimeout(() => {
-      earnBtn.innerHTML = originalText;
-      earnBtn.disabled = false;
-      ErrorToast();
-      resetAdState();
+    // Set timeout for ad loading - will be cleared when ad actually starts showing
+    adTimeout = setTimeout(() => {
+      // Only show error if ad is not currently showing
+      if (!adCurrentlyShowing) {
+        earnBtn.innerHTML = originalText;
+        earnBtn.disabled = false;
+        ErrorToast();
+        resetAdState();
+      }
     }, 7000);
 
     initializeAds((rewardedAd) => {
       if (rewardedAd) {
-        clearTimeout(adTimeout);
+        // Clear timeout since ad is available
+        if (adTimeout) {
+          clearTimeout(adTimeout);
+          adTimeout = null;
+        }
         rewardedAd.show((result) => {
           if (result && result.status === "viewed") {
             addCoins(10);
@@ -73,7 +84,11 @@ if (earnCoinBtn) {
           resetAdState();
         });
       } else {
-        clearTimeout(adTimeout);
+        // No ad available
+        if (adTimeout) {
+          clearTimeout(adTimeout);
+          adTimeout = null;
+        }
         earnBtn.innerHTML = originalText;
         earnBtn.disabled = false;
         resetAdState();
@@ -128,6 +143,12 @@ function initializeAds(callback) {
     beforeAd: () => {
       // Called before ad is shown - pause game, mute sound, disable buttons
       // This is synchronous - API won't show ad until this returns
+      adCurrentlyShowing = true;
+      // Clear any pending timeout since ad is now showing
+      if (adTimeout) {
+        clearTimeout(adTimeout);
+        adTimeout = null;
+      }
     },
     adViewed: () => {
       // Ad was fully viewed - player earned the reward
@@ -158,6 +179,7 @@ function initializeAds(callback) {
     afterAd: () => {
       // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
       // Only called if an ad was actually shown
+      adCurrentlyShowing = false;
       resetAdState();
     },
     adBreakDone: (placementInfo) => {
@@ -166,6 +188,11 @@ function initializeAds(callback) {
       // If no ad was available, this is the only callback that fires
       if (!adResultStatus && currentAdCallback) {
         // No ad was shown - none of the other callbacks were called
+        // Clear timeout since no ad will be shown
+        if (adTimeout) {
+          clearTimeout(adTimeout);
+          adTimeout = null;
+        }
         currentAdCallback(null);
         currentAdCallback = null;
         resetAdState();
@@ -246,9 +273,14 @@ function addCoins(amount) {
 /* ---------------- RESET AD STATE ---------------- */
 function resetAdState() {
   adLoading = false;
+  adCurrentlyShowing = false;
   if (adResetTimer) {
     clearTimeout(adResetTimer);
     adResetTimer = null;
+  }
+  if (adTimeout) {
+    clearTimeout(adTimeout);
+    adTimeout = null;
   }
 }
 
@@ -284,47 +316,71 @@ function showOopsPopup() {
 
   /* Skip handler */
   skipBtn.addEventListener("click", function () {
+    // Don't redirect if ad is currently showing
+    if (adCurrentlyShowing) {
+      console.log("Cannot skip while ad is showing");
+      return;
+    }
     if (clickedGameUrl) window.location.href = clickedGameUrl;
     closeOopsPopup();
   });
 
   /* Watch Ad handler */
   watchBtn.addEventListener("click", function () {
+    // Prevent multiple clicks while ad is loading/showing
+    if (adLoading || adCurrentlyShowing) return;
+    
     watchBtn.innerHTML = "Loading Ad... ⏳";
     watchBtn.disabled = true;
     skipBtn.disabled = true;
 
-    let adTimeout = setTimeout(() => {
-      watchBtn.innerHTML = originalText;
-      watchBtn.disabled = false;
-      skipBtn.disabled = false;
-      if (clickedGameUrl) window.location.href = clickedGameUrl;
-      closeOopsPopup();
+    // Set timeout for ad loading - will be cleared when ad actually starts showing
+    adTimeout = setTimeout(() => {
+      // Only redirect if ad is not currently showing
+      if (!adCurrentlyShowing) {
+        watchBtn.innerHTML = originalText;
+        watchBtn.disabled = false;
+        skipBtn.disabled = false;
+        if (clickedGameUrl) window.location.href = clickedGameUrl;
+        closeOopsPopup();
+        resetAdState();
+      }
     }, 7000);
 
     adLoading = true;
 
     initializeAds((rewardedAd) => {
       if (rewardedAd) {
-        clearTimeout(adTimeout);
+        // Clear timeout since ad is available
+        if (adTimeout) {
+          clearTimeout(adTimeout);
+          adTimeout = null;
+        }
         rewardedAd.show((result) => {
-          if (result && result.status === "viewed") {
-            if (clickedGameUrl) {
-              setTimeout(() => (window.location.href = clickedGameUrl), 100);
+          // Wait a bit for ad to fully close before redirecting
+          setTimeout(() => {
+            // Only redirect if ad was viewed (user earned coins)
+            // Don't redirect if ad was dismissed - let user try again or skip
+            if (result && result.status === "viewed") {
+              // User earned coins, now redirect to game
+              if (clickedGameUrl && !adCurrentlyShowing) {
+                window.location.href = clickedGameUrl;
+              }
             }
-          } else {
-            if (clickedGameUrl) {
-              setTimeout(() => (window.location.href = clickedGameUrl), 100);
-            }
-          }
-          closeOopsPopup();
-          watchBtn.innerHTML = originalText;
-          watchBtn.disabled = false;
-          skipBtn.disabled = false;
-          resetAdState();
+            // If ad was dismissed, don't redirect - let user decide what to do
+            closeOopsPopup();
+            watchBtn.innerHTML = originalText;
+            watchBtn.disabled = false;
+            skipBtn.disabled = false;
+            resetAdState();
+          }, 500); // Small delay to ensure ad is fully closed
         });
       } else {
-        clearTimeout(adTimeout);
+        // No ad available
+        if (adTimeout) {
+          clearTimeout(adTimeout);
+          adTimeout = null;
+        }
         watchBtn.innerHTML = originalText;
         watchBtn.disabled = false;
         skipBtn.disabled = false;
