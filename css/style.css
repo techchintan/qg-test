@@ -116,8 +116,8 @@ main {
 }
 
 .play_btn_txt img {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
 }
 
 .redeem-coin {
@@ -206,6 +206,7 @@ main {
   }
 }
 
+#earnCoinBtn:hover,
 .play-btn:hover,
 .click_btn1:hover {
   background-color: #6842ff;
@@ -540,6 +541,28 @@ main {
   justify-content: center;
   align-items: center;
   gap: 10px;
+}
+
+.back-icon-link {
+  position: absolute;
+  left: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text_color);
+  transition: opacity 0.2s ease;
+  text-decoration: none;
+}
+
+.back-icon-link:hover {
+  opacity: 0.7;
+}
+
+.back-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 
 .game_section6 p {
