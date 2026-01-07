@@ -1,6 +1,7 @@
 let adLoading = false;
 let adResetTimer = null;
-let clickedGameUrl = null;
+// Use window object to make clickedGameUrl accessible from other scripts
+window.clickedGameUrl = window.clickedGameUrl || null;
 let adCurrentlyShowing = false; // Track if ad is actively showing
 let adTimeout = null; // Store timeout reference
 let currentButtonElement = null; // Track which button triggered the ad
@@ -170,7 +171,7 @@ document.querySelectorAll(".game_section2").forEach((section) => {
     const userCoins = parseInt(safeGetItem("coins")) || 0;
     const requiredCoins = 10;
 
-    clickedGameUrl = this.querySelector("a").href;
+    window.clickedGameUrl = this.querySelector("a").href;
 
     if (userCoins < requiredCoins) {
       showOopsPopup();
@@ -178,7 +179,7 @@ document.querySelectorAll(".game_section2").forEach((section) => {
       const updatedCoins = userCoins - requiredCoins;
       safeSetItem("coins", updatedCoins);
       document.getElementById("coin").textContent = updatedCoins;
-      window.location.href = clickedGameUrl;
+      if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
     }
   });
 });
@@ -282,7 +283,7 @@ function showOopsPopup() {
       console.log("Cannot skip while ad is showing");
       return;
     }
-    if (clickedGameUrl) window.location.href = clickedGameUrl;
+    if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
     closeOopsPopup();
   });
 
@@ -304,7 +305,7 @@ function showOopsPopup() {
         watchBtn.innerHTML = originalText;
         watchBtn.disabled = false;
         skipBtn.disabled = false;
-        if (clickedGameUrl) window.location.href = clickedGameUrl;
+        if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
         closeOopsPopup();
         resetAdState();
         currentButtonElement = null;
@@ -324,7 +325,7 @@ function showOopsPopup() {
       watchBtn.innerHTML = originalText;
       watchBtn.disabled = false;
       skipBtn.disabled = false;
-      if (clickedGameUrl) window.location.href = clickedGameUrl;
+      if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
       closeOopsPopup();
       resetAdState();
       currentButtonElement = null;
@@ -350,7 +351,7 @@ function showOopsPopup() {
             watchBtn.innerHTML = originalText;
             watchBtn.disabled = false;
             skipBtn.disabled = false;
-            if (clickedGameUrl) window.location.href = clickedGameUrl;
+            if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
             closeOopsPopup();
             resetAdState();
             currentButtonElement = null;
@@ -374,8 +375,8 @@ function showOopsPopup() {
         // Wait a bit for ad to fully close before redirecting
         setTimeout(() => {
           // User earned coins, now redirect to game
-          if (clickedGameUrl && !adCurrentlyShowing) {
-            window.location.href = clickedGameUrl;
+          if (window.clickedGameUrl && !adCurrentlyShowing) {
+            window.location.href = window.clickedGameUrl;
           }
           closeOopsPopup();
         }, 500); // Small delay to ensure ad is fully closed
@@ -415,7 +416,7 @@ function showOopsPopup() {
           if (skipBtn) {
             skipBtn.disabled = false;
           }
-          if (clickedGameUrl) window.location.href = clickedGameUrl;
+          if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
           closeOopsPopup();
           resetAdState();
           currentButtonElement = null;
