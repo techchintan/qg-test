@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Auto-load start ad after 3 seconds
   setTimeout(() => {
     loadStartAd();
-  }, 3000);
+  }, 5000);
 });
 
 /* ---------------- EARN COINS BUTTON ---------------- */
