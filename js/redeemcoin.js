@@ -27,6 +27,35 @@ function safeSetItem(key, value) {
   }
 }
 
+/* ---------------- AUTO-LOAD START AD ==================== */
+function loadStartAd() {
+  // Check if Ad Placement API is initialized
+  if (typeof adBreak === "undefined") {
+    console.warn(
+      "Ad Placement API not initialized. Make sure the initialization script is included in the HTML head."
+    );
+    return;
+  }
+
+  // Use adBreak for start type ad
+  adBreak({
+    type: "start",
+    name: "page-start-ad",
+    beforeAd: () => {
+      // Called before ad is shown
+      console.log("Start ad is about to show");
+    },
+    afterAd: () => {
+      // Called after ad is dismissed
+      console.log("Start ad dismissed");
+    },
+    adBreakDone: (placementInfo) => {
+      // Always called even if an ad wasn't shown
+      console.log("Start ad break done", placementInfo);
+    },
+  });
+}
+
 /* ---------------- PAGE LOAD: INIT COINS ---------------- */
 document.addEventListener("DOMContentLoaded", function () {
   const userCoins = parseInt(safeGetItem("coins")) || 0;
@@ -41,6 +70,11 @@ document.addEventListener("DOMContentLoaded", function () {
       preloadAdBreaks: "on", // Automatically preload ads
     });
   }
+
+  // Auto-load start ad after 3 seconds
+  setTimeout(() => {
+    loadStartAd();
+  }, 3000);
 });
 
 /* ---------------- EARN COINS BUTTON ---------------- */
