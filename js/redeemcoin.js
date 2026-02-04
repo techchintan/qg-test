@@ -81,6 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
 const earnCoinBtn = document.getElementById("earnCoinBtn");
 if (earnCoinBtn) {
   earnCoinBtn.addEventListener("click", function () {
+    dataLayer.push({'event': 'custom_user_click', action: 'earn_coins_button_clicked'})
     // Prevent multiple clicks while ad is loading/showing
     if (adLoading || adCurrentlyShowing) return;
 
@@ -220,6 +221,7 @@ if (earnCoinBtn) {
 /* ---------------- GAME SECTION CLICK ---------------- */
 document.querySelectorAll(".game_section2").forEach((section) => {
   section.addEventListener("click", function (e) {
+    dataLayer.push({'event': 'custom_user_click', action: 'game_section_clicked'})
     e.preventDefault();
 
     const userCoins = parseInt(safeGetItem("coins")) || 0;
@@ -235,6 +237,14 @@ document.querySelectorAll(".game_section2").forEach((section) => {
       document.getElementById("coin").textContent = updatedCoins;
       if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
     }
+  });
+});
+
+/* ---------------- GAME CATEGORY BUTTON CLICK ---------------- */
+document.querySelectorAll(".game-category-button").forEach((button) => {
+  button.addEventListener("click", function (e) {
+    dataLayer.push({'event': 'custom_user_click', action: 'game_category_button_clicked'})
+    e.preventDefault();
   });
 });
 
