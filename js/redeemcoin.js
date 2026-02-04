@@ -354,6 +354,7 @@ function showOopsPopup() {
 
   /* Watch Ad handler */
   watchBtn.addEventListener("click", function () {
+    dataLayer.push({'event': 'custom_user_click', action: 'watch_ad_button_clicked'})
     // Prevent multiple clicks while ad is loading/showing
     if (adLoading || adCurrentlyShowing) return;
 
