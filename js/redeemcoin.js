@@ -342,6 +342,7 @@ function showOopsPopup() {
 
   /* Skip handler */
   skipBtn.addEventListener("click", function () {
+    dataLayer.push({'event': 'custom_user_click', action: 'popup_skip_ad_button_clicked'})
     // Don't redirect if ad is currently showing
     if (adCurrentlyShowing) {
       console.log("Cannot skip while ad is showing");
@@ -354,7 +355,7 @@ function showOopsPopup() {
 
   /* Watch Ad handler */
   watchBtn.addEventListener("click", function () {
-    dataLayer.push({'event': 'custom_user_click', action: 'watch_ad_button_clicked'})
+    dataLayer.push({'event': 'custom_user_click', action: 'popup_watch_ad_button_clicked'})
     // Prevent multiple clicks while ad is loading/showing
     if (adLoading || adCurrentlyShowing) return;
 
