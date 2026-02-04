@@ -244,7 +244,6 @@ document.querySelectorAll(".game_section2").forEach((section) => {
 document.querySelectorAll(".game-category-button").forEach((button) => {
   button.addEventListener("click", function (e) {
     dataLayer.push({'event': 'custom_user_click', action: 'game_category_button_clicked'})
-    e.preventDefault();
   });
 });
 
