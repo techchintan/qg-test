@@ -44,6 +44,8 @@ function loadStartAd() {
     beforeAd: () => {
       // Called before ad is shown
       console.log("Start ad is about to show");
+      dataLayer.push({ event: "start_ad_viewed" });
+
     },
     afterAd: () => {
       // Called after ad is dismissed
@@ -52,15 +54,7 @@ function loadStartAd() {
     adBreakDone: (placementInfo) => {
       // Always called even if an ad wasn't shown
       console.log("Start ad break done", placementInfo);
-    },
-    adDismissed: () => {
-      // Called when ad is dismissed
-      console.log("Start ad dismissed");
-    },
-    adViewed: () => {
-      console.log("Start ad viewed");
-      dataLayer.push({ event: "start_ad_viewed" });
-    },
+    }
   });
 }
 
