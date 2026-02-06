@@ -39,7 +39,7 @@ function loadStartAd() {
 
   // Use adBreak for start type ad
   adBreak({
-    type: "start",
+    type: "preroll",
     name: "page-start-ad",
     beforeAd: () => {
       // Called before ad is shown
@@ -72,9 +72,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Auto-load start ad after 3 seconds
-  // setTimeout(() => {
-  //   loadStartAd();
-  // }, 5000);
+  setTimeout(() => {
+    loadStartAd();
+  }, 3000);
 });
 
 /* ---------------- EARN COINS BUTTON ---------------- */
