@@ -58,6 +58,7 @@ function loadStartAd() {
       console.log("Start ad dismissed");
     },
     adViewed: () => {
+      console.log("Start ad viewed");
       dataLayer.push({ event: "start_ad_viewed" });
     },
   });
