@@ -39,7 +39,7 @@ function loadStartAd() {
 
   // Use adBreak for start type ad
   adBreak({
-    type: "preroll",
+    type: "start",
     name: "page-start-ad",
     beforeAd: () => {
       // Called before ad is shown
