@@ -30,9 +30,8 @@ document.addEventListener("DOMContentLoaded", function () {
     allGamesContainer.querySelectorAll(".game_section2")
   );
 
-
   searchInput.addEventListener("click", function () {
-    dataLayer.push({'event': 'custom_user_click', action: 'search_input_clicked'})
+    dataLayer.push({ event: "search_input_clicked" });
   });
 
   searchInput.addEventListener("input", function () {

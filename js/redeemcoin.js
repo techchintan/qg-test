@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
 const earnCoinBtn = document.getElementById("earnCoinBtn");
 if (earnCoinBtn) {
   earnCoinBtn.addEventListener("click", function () {
-    dataLayer.push({'event': 'custom_user_click', action: 'earn_coins_button_clicked'})
+    dataLayer.push({ event: "earn_coins_button_clicked" });
     // Prevent multiple clicks while ad is loading/showing
     if (adLoading || adCurrentlyShowing) return;
 
@@ -221,7 +221,7 @@ if (earnCoinBtn) {
 /* ---------------- GAME SECTION CLICK ---------------- */
 document.querySelectorAll(".game_section2").forEach((section) => {
   section.addEventListener("click", function (e) {
-    dataLayer.push({'event': 'custom_user_click', action: 'game_section_clicked'})
+    dataLayer.push({ event: "game_section_clicked" });
     e.preventDefault();
 
     const userCoins = parseInt(safeGetItem("coins")) || 0;
@@ -243,7 +243,9 @@ document.querySelectorAll(".game_section2").forEach((section) => {
 /* ---------------- GAME CATEGORY BUTTON CLICK ---------------- */
 document.querySelectorAll(".game-category-button").forEach((button) => {
   button.addEventListener("click", function (e) {
-    dataLayer.push({'event': 'custom_user_click', action: 'game_category_button_clicked'})
+    dataLayer.push({
+      event: "game_category_button_clicked",
+    });
   });
 });
 
@@ -342,7 +344,9 @@ function showOopsPopup() {
 
   /* Skip handler */
   skipBtn.addEventListener("click", function () {
-    dataLayer.push({'event': 'custom_user_click', action: 'popup_skip_ad_button_clicked'})
+    dataLayer.push({
+      event: "popup_skip_ad_button_clicked",
+    });
     // Don't redirect if ad is currently showing
     if (adCurrentlyShowing) {
       console.log("Cannot skip while ad is showing");
@@ -355,7 +359,9 @@ function showOopsPopup() {
 
   /* Watch Ad handler */
   watchBtn.addEventListener("click", function () {
-    dataLayer.push({'event': 'custom_user_click', action: 'popup_watch_ad_button_clicked'})
+    dataLayer.push({
+      event: "popup_watch_ad_button_clicked",
+    });
     // Prevent multiple clicks while ad is loading/showing
     if (adLoading || adCurrentlyShowing) return;
 
