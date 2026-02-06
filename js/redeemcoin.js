@@ -53,6 +53,13 @@ function loadStartAd() {
       // Always called even if an ad wasn't shown
       console.log("Start ad break done", placementInfo);
     },
+    adDismissed: () => {
+      // Called when ad is dismissed
+      console.log("Start ad dismissed");
+    },
+    adViewed: () => {
+      dataLayer.push({ event: "start_ad_viewed" });
+    },
   });
 }
 
