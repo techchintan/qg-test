@@ -73,10 +73,16 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Auto-load start ad after 3 seconds
-  setTimeout(() => {
-    loadStartAd();
-  }, 5000);
+  // Auto-load start ad after 5 seconds - only on homepage
+  const isHomepage = window.location.pathname === '/' ||
+    window.location.pathname === '/index.html' ||
+    window.location.pathname.endsWith('/index.html');
+
+  if (isHomepage) {
+    setTimeout(() => {
+      loadStartAd();
+    }, 5000);
+  }
 });
 
 /* ---------------- EARN COINS BUTTON ---------------- */
