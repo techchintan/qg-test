@@ -360,7 +360,7 @@ function showOopsPopup() {
       console.log("Cannot skip while ad is showing");
       return;
     }
-    if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
+    // if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
     closeOopsPopup();
     skipBtn = null;
   });
