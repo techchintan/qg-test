@@ -572,7 +572,16 @@ main {
   text-transform: capitalize;
 }
 
-.game_section5 button, .play-game-container button {
+.play-overlay-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+.game_section5 button {
   background-color: var(--btn_bg);
   padding: 10px 0px;
   letter-spacing: 1px;
@@ -957,10 +966,14 @@ footer {
 
 .play-game-container {
   position: relative;
+  margin: 16px;
+  border-radius: var(--rounded);
+  overflow: hidden;
 }
 
 .play-overlay {
   position: absolute;
+  padding: 16px;
   top: 0;
   left: 0;
   width: 100%;
@@ -971,6 +984,37 @@ footer {
   justify-content: center;
 }
 
+.play-overlay-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.play-game-btn-text {
+  letter-spacing: 1px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--btn-text-color);
+  z-index: 1;
+}
+
+.play-overlay-content-icon {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  border-radius: 50%;
+  padding: 16px;
+}
 /* -------------------------------------------media----------------------------------------------- */
 
 @media (max-width: 500px) {
