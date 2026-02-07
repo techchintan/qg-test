@@ -361,6 +361,7 @@ function showOopsPopup() {
       return;
     }
     // if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
+    window.location.reload();
     closeOopsPopup();
     skipBtn = null;
   });
