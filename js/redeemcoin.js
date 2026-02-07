@@ -544,6 +544,8 @@ function closeOopsPopup() {
 const playGameBtn = document.getElementById("play-game-btn");
 if (playGameBtn) {
   playGameBtn.addEventListener("click", () => {
+    const playOverlay = document.querySelector(".play-overlay");
+
     dataLayer.push({ event: "play_game_button_clicked" });
     // Prevent multiple clicks while ad is loading/showing
     if (adLoading || adCurrentlyShowing) return;
@@ -583,6 +585,9 @@ if (playGameBtn) {
       playGameBtn.innerHTML = originalText;
       playGameBtn.disabled = false;
       ErrorToast();
+      if (playOverlay) {
+        playOverlay.remove();
+      }
       resetAdState();
       currentButtonElement = null;
       currentButtonOriginalText = null;
@@ -625,7 +630,6 @@ if (playGameBtn) {
         // Ad was fully viewed - remove play-overlay
         adWasViewed = true;
         // Remove play-overlay after ad is viewed
-        const playOverlay = document.querySelector(".play-overlay");
         if (playOverlay) {
           playOverlay.remove();
         }
@@ -674,6 +678,9 @@ if (playGameBtn) {
             currentButtonElement.disabled = false;
           }
           ErrorToast();
+          if (playOverlay) {
+            playOverlay.remove();
+          }
           resetAdState();
           currentButtonElement = null;
           currentButtonOriginalText = null;

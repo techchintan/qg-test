@@ -141,7 +141,33 @@
           <div class="qg_game_section">
             <!-- Search Section -->
             <section class="extra-s1space">
-              <div class="container">
+              <div
+                class="container"
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 10px;
+                "
+              >
+                <a href="../index.html" aria-label="Go back to home">
+                  <svg
+                    class="back-icon"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15 18L9 12L15 6"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </a>
                 <div class="search-wrapper">
                   <input
                     type="search"
@@ -213,7 +239,7 @@
                 src="https://html5.gamedistribution.com/4ca16968f1f240bcb65147c3979ba0a7/?gd_sdk_referrer_url=https://qwiqgames.com/game/cricket-league"
                 width="100%"
                 height="100%"
-                style="border: none !important; aspect-ratio: 1/1"
+                style="border: none !important; aspect-ratio: 3/4"
               ></iframe>
               <div class="play-overlay" id="play-game-btn">
                 <img
@@ -245,11 +271,24 @@
                       </g>
                     </svg>
                   </div>
-                  <p
-                    class="play-game-btn-text"
-                  >
-                    Play Game
-                  </p>
+                  <p class="play-game-btn-text">Play Game</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Redeem Coin Section -->
+            <div class="resp_choose_game">
+              <div class="choose_game" style="margin-top: 5px">
+                <div class="redeem-coin">
+                  <img src="../assets/icons/coin-earn.png" alt="" />
+                  <span id="coin">0</span>
+                </div>
+                <div class="earn-coin-btn">
+                  <button id="earnCoinBtn">
+                    <img src="../assets/icons/coin.png" alt="" />
+                    Earn Free Coins
+                  </button>
+                  <span class="ad-tag-earn">Ad</span>
                 </div>
               </div>
             </div>
