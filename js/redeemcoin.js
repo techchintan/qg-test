@@ -539,3 +539,145 @@ function closeOopsPopup() {
   skipBtn = null;
 }
 
+/* ---------------- PLAY GAME BUTTON ---------------- */
+const playGameBtn = document.getElementById("play-game-btn");
+if (playGameBtn) {
+  playGameBtn.addEventListener("click", () => {
+    dataLayer.push({ event: "play_game_button_clicked" });
+    // Prevent multiple clicks while ad is loading/showing
+    if (adLoading || adCurrentlyShowing) return;
+
+    const originalText = playGameBtn.innerHTML;
+    currentButtonElement = playGameBtn;
+    currentButtonOriginalText = originalText;
+
+    // Show loading state
+    playGameBtn.innerHTML = "Loading Ad... ⏳";
+    playGameBtn.disabled = true;
+    adLoading = true;
+    adWasViewed = false; // Reset flag for new ad
+
+    // Set timeout for ad loading - will be cleared when ad actually starts showing
+    adTimeout = setTimeout(() => {
+      // Only show error if ad is not currently showing
+      if (!adCurrentlyShowing) {
+        playGameBtn.innerHTML = originalText;
+        playGameBtn.disabled = false;
+        ErrorToast();
+        resetAdState();
+        currentButtonElement = null;
+        currentButtonOriginalText = null;
+      }
+    }, 7000);
+
+    // Check if Ad Placement API is initialized
+    if (typeof adBreak === "undefined") {
+      console.warn(
+        "Ad Placement API not initialized. Make sure the initialization script is included in the HTML head."
+      );
+      if (adTimeout) {
+        clearTimeout(adTimeout);
+        adTimeout = null;
+      }
+      playGameBtn.innerHTML = originalText;
+      playGameBtn.disabled = false;
+      ErrorToast();
+      resetAdState();
+      currentButtonElement = null;
+      currentButtonOriginalText = null;
+      return;
+    }
+
+    // Use adBreak directly for rewarded ads
+    adBreak({
+      type: "reward",
+      name: "play-game",
+      beforeReward: (showAdFn) => {
+        // Rewarded ad is available - showAdFn must be called as part of a direct user action
+        if (showAdFn) {
+          try {
+            showAdFn(); // This triggers the ad to show
+          } catch (error) {
+            console.warn("Error showing rewarded ad:", error);
+            if (adTimeout) {
+              clearTimeout(adTimeout);
+              adTimeout = null;
+            }
+            playGameBtn.innerHTML = originalText;
+            playGameBtn.disabled = false;
+            resetAdState();
+            currentButtonElement = null;
+            currentButtonOriginalText = null;
+          }
+        }
+      },
+      beforeAd: () => {
+        // Called before ad is shown - pause game, mute sound, disable buttons
+        adCurrentlyShowing = true;
+        // Clear any pending timeout since ad is now showing
+        if (adTimeout) {
+          clearTimeout(adTimeout);
+          adTimeout = null;
+        }
+      },
+      adViewed: () => {
+        // Ad was fully viewed - remove play-overlay
+        adWasViewed = true;
+        // Remove play-overlay after ad is viewed
+        const playOverlay = document.querySelector(".play-overlay");
+        if (playOverlay) {
+          playOverlay.remove();
+        }
+        // Delay state reset to ensure ad is fully closed (important for longer ads)
+        setTimeout(() => {
+          adCurrentlyShowing = false;
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
+        }, 1000); // Increased delay for longer ads (30+ seconds)
+      },
+      adDismissed: () => {
+        // Ad was dismissed before completion - player did not earn reward
+        console.log("Ad skipped or closed early.");
+        // Don't reset state immediately - wait for afterAd
+      },
+      afterAd: () => {
+        // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
+        // Only reset if ad wasn't viewed (if viewed, adViewed callback handles it)
+        if (!adWasViewed) {
+          adCurrentlyShowing = false;
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
+        }
+      },
+      adBreakDone: (placementInfo) => {
+        // Always called even if an ad wasn't shown
+        // If no ad was available, this is the only callback that fires
+        if (!adCurrentlyShowing && adLoading) {
+          // No ad was shown - clear timeout and reset
+          if (adTimeout) {
+            clearTimeout(adTimeout);
+            adTimeout = null;
+          }
+          if (currentButtonElement) {
+            currentButtonElement.innerHTML = currentButtonOriginalText;
+            currentButtonElement.disabled = false;
+          }
+          ErrorToast();
+          resetAdState();
+          currentButtonElement = null;
+          currentButtonOriginalText = null;
+        }
+      },
+    });
+  });
+}

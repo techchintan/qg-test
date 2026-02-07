@@ -572,7 +572,7 @@ main {
   text-transform: capitalize;
 }
 
-.game_section5 button {
+.game_section5 button, .play-game-container button {
   background-color: var(--btn_bg);
   padding: 10px 0px;
   letter-spacing: 1px;
@@ -952,6 +952,22 @@ footer {
 .resp_footer,
 .resp_play_btn {
   display: flex;
+  justify-content: center;
+}
+
+.play-game-container {
+  position: relative;
+}
+
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 
