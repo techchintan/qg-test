@@ -21,6 +21,7 @@
 
 body {
   font-family: "Google Sans", "Roboto", Google Sans, sans-serif;
+  background-color: #000;
 }
 
 :root {
@@ -28,7 +29,7 @@ body {
   --btn-rounded: 393px;
   --rounded: 15px;
   --border-color: #e6e7e8;
-  --btn_bg: #5f0aff;
+  --btn_bg: #b00f41;
   --theme-Green: #14903e;
   --btn-text-color: #f0f5fc;
 }
@@ -58,6 +59,7 @@ main {
   background-attachment: fixed;
   background-size: cover;
   overflow-x: hidden;
+  background-color: #000;
 }
 
 .bg-top {
@@ -65,7 +67,7 @@ main {
   top: 0;
   width: 100%;
   height: 50%;
-  background: linear-gradient(180deg, white, rgba(30, 31, 34, 0));
+  background: linear-gradient(180deg, rgb(0, 0, 0), rgba(30, 31, 34, 0));
 }
 
 .bg-bottom {
@@ -73,7 +75,7 @@ main {
   bottom: 0;
   width: 100%;
   height: 50%;
-  background: linear-gradient(0deg, white, rgba(30, 31, 34, 0));
+  background: linear-gradient(0deg, rgb(0, 0, 0), rgba(30, 31, 34, 0));
 }
 
 .main_div {
@@ -90,6 +92,7 @@ main {
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  background-color: #000;
 }
 
 .qg_game_section {
@@ -108,7 +111,7 @@ main {
 
 .play_btn_txt {
   font-size: 16px;
-  color: var(--text_color);
+  color: #fff;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -147,7 +150,7 @@ main {
   cursor: pointer;
   font-weight: 600;
   border: 1px solid var(--btn_bg);
-  color: #000;
+  color: #fff;
   border-radius: var(--btn-rounded);
 }
 
@@ -209,7 +212,7 @@ main {
 #earnCoinBtn:hover,
 .play-btn:hover,
 .click_btn1:hover {
-  background-color: #6842ff;
+  background-color: var(--btn_bg);
   -moz-animation-duration: 2s;
   animation-duration: 2s;
 }
@@ -245,6 +248,7 @@ main {
 }
 
 .cat_img {
+  filter: brightness(0) invert(1);
   width: 20px;
   height: 20px;
 }
@@ -608,13 +612,13 @@ main {
 .about_section h1 {
   margin: auto;
   margin-bottom: 15px;
-  color: #0009;
+  color: #fff;
   font-size: 24px;
 }
 
 .about_section p {
   text-align: start;
-  color: #888;
+  color: #fff;
   font-size: 16px;
   margin-bottom: 10px;
 }
@@ -629,7 +633,7 @@ footer {
 }
 
 .anchor_text {
-  color: black;
+  color: #fff;
 }
 
 .anchor_text:hover {
