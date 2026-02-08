@@ -45,7 +45,6 @@ function loadStartAd() {
       // Called before ad is shown
       console.log("Start ad is about to show");
       dataLayer.push({ event: "start_ad_viewed" });
-
     },
     afterAd: () => {
       // Called after ad is dismissed
@@ -54,7 +53,7 @@ function loadStartAd() {
     adBreakDone: (placementInfo) => {
       // Always called even if an ad wasn't shown
       console.log("Start ad break done", placementInfo);
-    }
+    },
   });
 }
 
@@ -74,9 +73,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Auto-load start ad after 5 seconds - only on homepage
-  const isHomepage = window.location.pathname === '/' ||
-    window.location.pathname === '/index.html' ||
-    window.location.pathname.endsWith('/index.html');
+  const isHomepage =
+    window.location.pathname === "/" ||
+    window.location.pathname === "/index.html" ||
+    window.location.pathname.endsWith("/index.html");
 
   if (isHomepage) {
     setTimeout(() => {
