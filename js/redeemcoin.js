@@ -182,25 +182,7 @@ if (earnCoinBtn) {
       }
     }, 7000);
 
-    // Check if Ad Placement API is initialized
-    if (typeof adBreak === "undefined") {
-      console.warn(
-        "Ad Placement API not initialized. Make sure the initialization script is included in the HTML head."
-      );
-      if (adTimeout) {
-        clearTimeout(adTimeout);
-        adTimeout = null;
-      }
-      earnBtn.innerHTML = originalText;
-      earnBtn.disabled = false;
-      ErrorToast();
-      resetAdState();
-      currentButtonElement = null;
-      currentButtonOriginalText = null;
-      return;
-    }
-
-    // Use GPT rewarded ads
+    // Use GPT rewarded ads (no AdSense adBreak dependency)
     showGptRewardedAd({
       onStart: () => {
         adCurrentlyShowing = true;
