@@ -96,6 +96,7 @@
     ></script>
     <script>
       window.googletag = window.googletag || { cmd: [] };
+      var interstitialSlot;
       googletag.cmd.push(function () {
         googletag
           .defineSlot(
@@ -104,6 +105,15 @@
             "div-gpt-ad-1772705316169-0"
           )
           .addService(googletag.pubads());
+
+        interstitialSlot = googletag.defineOutOfPageSlot(
+          "/21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_Interstitial",
+          googletag.enums.OutOfPageFormat.INTERSTITIAL
+        );
+        if (interstitialSlot) {
+          interstitialSlot.addService(googletag.pubads());
+        }
+
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
       });
@@ -787,6 +797,16 @@
         </div>
       </main>
     </section>
+
+    <!-- Interstitial display -->
+    <script>
+      googletag = window.googletag || { cmd: [] };
+      googletag.cmd.push(function () {
+        if (typeof interstitialSlot !== "undefined" && interstitialSlot) {
+          googletag.display(interstitialSlot);
+        }
+      });
+    </script>
 
     <!-- Scripts -->
     <script src="../js/redeemcoin.js" crossorigin="anonymous"></script>
