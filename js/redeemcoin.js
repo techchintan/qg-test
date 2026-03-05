@@ -28,28 +28,65 @@ function showGptInterstitial({ onShown, onError } = {}) {
   window.googletag = window.googletag || { cmd: [] };
   ensureGptBaseInitialized();
 
+  // Create or show a full-screen overlay that will host
+  // a standard GPT display slot for the start interstitial.
+  const slotContainerId = "gpt-start-interstitial-slot";
+  let overlay = document.getElementById("gpt-start-interstitial-overlay");
+
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "gpt-start-interstitial-overlay";
+    overlay.style.cssText =
+      "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;";
+    overlay.innerHTML = `
+      <div id="${slotContainerId}" style="position:relative;width:320px;height:480px;background:#000;">
+        <button id="gpt-start-interstitial-close" style="position:absolute;top:8px;right:8px;z-index:2;">✕</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const closeBtn = document.getElementById("gpt-start-interstitial-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        overlay.style.display = "none";
+      });
+    }
+  } else {
+    overlay.style.display = "flex";
+  }
+
   googletag.cmd.push(function () {
     try {
+      const pubads = googletag.pubads();
+
       if (!interstitialSlot) {
-        interstitialSlot = googletag.defineOutOfPageSlot(
-          "/21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_Interstitial",
-          googletag.enums.OutOfPageFormat.INTERSTITIAL
-        );
-        if (interstitialSlot) {
-          interstitialSlot.addService(googletag.pubads());
-        }
+        interstitialSlot = googletag
+          .defineSlot(
+            "/21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_Interstitial",
+            [320, 480],
+            slotContainerId
+          )
+          .addService(pubads);
       }
 
       if (!interstitialSlot) {
         if (onError) onError(new Error("Failed to create interstitial slot"));
+        const overlayEl = document.getElementById(
+          "gpt-start-interstitial-overlay"
+        );
+        if (overlayEl) overlayEl.style.display = "none";
         return;
       }
 
       if (onShown) onShown();
-      googletag.display(interstitialSlot);
+      googletag.display(slotContainerId);
     } catch (e) {
       console.warn("Error showing interstitial ad:", e);
       if (onError) onError(e);
+      const overlayEl = document.getElementById(
+        "gpt-start-interstitial-overlay"
+      );
+      if (overlayEl) overlayEl.style.display = "none";
     }
   });
 }
