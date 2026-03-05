@@ -8,9 +8,10 @@ let currentButtonElement = null; // Track which button triggered the ad
 let currentButtonOriginalText = null; // Store original button text
 let adWasViewed = false; // Track if ad was successfully viewed (prevents premature state reset)
 let skipBtn = null; // Store skip button reference for popup
-let interstitialSlot = null; // GPT interstitial slot reference
+// Note: we no longer use a GPT interstitial slot on page load;
+// start ads now use the rewarded format.
 
-/* ---------------- GPT HELPERS (INTERSTITIAL & REWARDED) ---------------- */
+/* ---------------- GPT HELPERS (REWARDED ONLY) ---------------- */
 function ensureGptBaseInitialized() {
   window.googletag = window.googletag || { cmd: [] };
   googletag.cmd.push(function () {
@@ -20,85 +21,6 @@ function ensureGptBaseInitialized() {
       googletag.enableServices();
     } catch (e) {
       console.warn("Error enabling GPT services:", e);
-    }
-  });
-}
-
-function showGptInterstitial({ onShown, onError } = {}) {
-  window.googletag = window.googletag || { cmd: [] };
-  ensureGptBaseInitialized();
-
-  const slotContainerId = "gpt-start-interstitial-slot";
-  googletag.cmd.push(function () {
-    try {
-      const pubads = googletag.pubads();
-
-      if (!interstitialSlot) {
-        // Create the overlay + container once, but keep it hidden
-        let overlay = document.getElementById(
-          "gpt-start-interstitial-overlay"
-        );
-        if (!overlay) {
-          overlay = document.createElement("div");
-          overlay.id = "gpt-start-interstitial-overlay";
-          overlay.style.cssText =
-            "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;";
-          overlay.innerHTML = `
-            <div id="${slotContainerId}" style="position:relative;width:320px;height:480px;background:#000;">
-              <button id="gpt-start-interstitial-close" style="position:absolute;top:8px;right:8px;z-index:2;">✕</button>
-            </div>
-          `;
-          document.body.appendChild(overlay);
-
-          const closeBtn = document.getElementById(
-            "gpt-start-interstitial-close"
-          );
-          if (closeBtn) {
-            closeBtn.addEventListener("click", () => {
-              overlay.style.display = "none";
-            });
-          }
-        }
-
-        interstitialSlot = googletag
-          .defineSlot(
-            "/21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_Interstitial",
-            [320, 480],
-            slotContainerId
-          )
-          .addService(pubads);
-
-        // Only show the overlay when the ad has actually loaded
-        pubads.addEventListener("slotOnload", function (event) {
-          if (event.slot === interstitialSlot) {
-            const overlayEl = document.getElementById(
-              "gpt-start-interstitial-overlay"
-            );
-            if (overlayEl) {
-              overlayEl.style.display = "flex";
-            }
-            if (onShown) onShown();
-          }
-        });
-      }
-
-      if (!interstitialSlot) {
-        if (onError) onError(new Error("Failed to create interstitial slot"));
-        const overlayEl = document.getElementById(
-          "gpt-start-interstitial-overlay"
-        );
-        if (overlayEl) overlayEl.style.display = "none";
-        return;
-      }
-
-      googletag.display(slotContainerId);
-    } catch (e) {
-      console.warn("Error showing interstitial ad:", e);
-      if (onError) onError(e);
-      const overlayEl = document.getElementById(
-        "gpt-start-interstitial-overlay"
-      );
-      if (overlayEl) overlayEl.style.display = "none";
     }
   });
 }
@@ -168,15 +90,23 @@ function safeSetItem(key, value) {
   }
 }
 
-/* ---------------- AUTO-LOAD START AD (INTERSTITIAL) ==================== */
+/* ---------------- AUTO-LOAD START AD (REWARDED) ==================== */
 function loadStartAd() {
-  showGptInterstitial({
-    onShown: () => {
-      console.log("Interstitial start ad is about to show");
+  showGptRewardedAd({
+    onStart: () => {
+      console.log("Start rewarded ad is about to show");
       dataLayer.push({ event: "start_ad_viewed" });
     },
+    onReward: () => {
+      // Optionally grant coins for the start ad as well
+      // addCoins(10);
+      // showToast();
+    },
+    onClosed: () => {
+      // No special handling on close for the auto-start ad
+    },
     onError: (err) => {
-      console.warn("Failed to show interstitial start ad:", err);
+      console.warn("Failed to show start rewarded ad:", err);
     },
   });
 }
