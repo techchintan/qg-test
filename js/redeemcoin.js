@@ -8,6 +8,98 @@ let currentButtonElement = null; // Track which button triggered the ad
 let currentButtonOriginalText = null; // Store original button text
 let adWasViewed = false; // Track if ad was successfully viewed (prevents premature state reset)
 let skipBtn = null; // Store skip button reference for popup
+let interstitialSlot = null; // GPT interstitial slot reference
+
+/* ---------------- GPT HELPERS (INTERSTITIAL & REWARDED) ---------------- */
+function ensureGptBaseInitialized() {
+  window.googletag = window.googletag || { cmd: [] };
+  googletag.cmd.push(function () {
+    try {
+      const pubads = googletag.pubads();
+      pubads.enableSingleRequest();
+      googletag.enableServices();
+    } catch (e) {
+      console.warn("Error enabling GPT services:", e);
+    }
+  });
+}
+
+function showGptInterstitial({ onShown, onError } = {}) {
+  window.googletag = window.googletag || { cmd: [] };
+  ensureGptBaseInitialized();
+
+  googletag.cmd.push(function () {
+    try {
+      if (!interstitialSlot) {
+        interstitialSlot = googletag.defineOutOfPageSlot(
+          "/21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_Interstitial",
+          googletag.enums.OutOfPageFormat.INTERSTITIAL
+        );
+        if (interstitialSlot) {
+          interstitialSlot.addService(googletag.pubads());
+        }
+      }
+
+      if (!interstitialSlot) {
+        if (onError) onError(new Error("Failed to create interstitial slot"));
+        return;
+      }
+
+      if (onShown) onShown();
+      googletag.display(interstitialSlot);
+    } catch (e) {
+      console.warn("Error showing interstitial ad:", e);
+      if (onError) onError(e);
+    }
+  });
+}
+
+function showGptRewardedAd({ onStart, onReward, onClosed, onError } = {}) {
+  window.googletag = window.googletag || { cmd: [] };
+  ensureGptBaseInitialized();
+
+  googletag.cmd.push(function () {
+    try {
+      const pubads = googletag.pubads();
+      const rewardedSlot = googletag
+        .defineOutOfPageSlot(
+          "/21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_Rewarded",
+          googletag.enums.OutOfPageFormat.REWARDED
+        )
+        .addService(pubads);
+
+      const handleReady = function (evt) {
+        try {
+          evt.makeRewardedVisible();
+        } catch (e) {
+          console.warn("Error making rewarded visible:", e);
+        }
+        if (onStart) onStart();
+      };
+
+      const handleGranted = function (evt) {
+        if (onReward) onReward(evt);
+      };
+
+      const handleClosed = function (evt) {
+        pubads.removeEventListener("rewardedSlotReady", handleReady);
+        pubads.removeEventListener("rewardedSlotGranted", handleGranted);
+        pubads.removeEventListener("rewardedSlotClosed", handleClosed);
+        googletag.destroySlots([rewardedSlot]);
+        if (onClosed) onClosed(evt);
+      };
+
+      pubads.addEventListener("rewardedSlotReady", handleReady);
+      pubads.addEventListener("rewardedSlotGranted", handleGranted);
+      pubads.addEventListener("rewardedSlotClosed", handleClosed);
+
+      googletag.display(rewardedSlot);
+    } catch (e) {
+      console.warn("Error setting up rewarded ad:", e);
+      if (onError) onError(e);
+    }
+  });
+}
 
 /* ---------------- SAFE LOCALSTORAGE HELPERS ---------------- */
 function safeGetItem(key) {
@@ -27,34 +119,16 @@ function safeSetItem(key, value) {
   }
 }
 
-/* ---------------- AUTO-LOAD START AD ==================== */
+/* ---------------- AUTO-LOAD START AD (INTERSTITIAL) ==================== */
 function loadStartAd() {
-  // Check if Ad Placement API is initialized
-  if (typeof adBreak === "undefined") {
-    console.warn(
-      "Ad Placement API not initialized. Make sure the initialization script is included in the HTML head."
-    );
-    return;
-  }
-
-  // Use adBreak for start type ad
-  adBreak({
-    type: "start",
-    name: "page-start-ad",
-    beforeAd: () => {
-      // Called before ad is shown
-      console.log("Start ad is about to show");
+  showGptInterstitial({
+    onShown: () => {
+      console.log("Interstitial start ad is about to show");
       dataLayer.push({ event: "start_ad_viewed" });
-
     },
-    afterAd: () => {
-      // Called after ad is dismissed
-      console.log("Start ad dismissed");
+    onError: (err) => {
+      console.warn("Failed to show interstitial start ad:", err);
     },
-    adBreakDone: (placementInfo) => {
-      // Always called even if an ad wasn't shown
-      console.log("Start ad break done", placementInfo);
-    }
   });
 }
 
@@ -63,15 +137,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const userCoins = parseInt(safeGetItem("coins")) || 0;
   const coinEl = document.getElementById("coin");
   if (coinEl) coinEl.textContent = userCoins;
-
-  // Initialize Ad Placement API configuration
-  // Reference: https://developers.google.com/ad-placement/apis
-  if (typeof adConfig !== "undefined") {
-    adConfig({
-      sound: "on", // Sound is enabled in the game
-      preloadAdBreaks: "on", // Automatically preload ads
-    });
-  }
 
   // Auto-load start ad after 5 seconds - only on homepage
   const isHomepage = window.location.pathname === '/' ||
@@ -135,44 +200,19 @@ if (earnCoinBtn) {
       return;
     }
 
-    // Use adBreak directly for rewarded ads
-    adBreak({
-      type: "reward",
-      name: "earn-coins",
-      beforeReward: (showAdFn) => {
-        // Rewarded ad is available - showAdFn must be called as part of a direct user action
-        if (showAdFn) {
-          try {
-            showAdFn(); // This triggers the ad to show
-          } catch (error) {
-            console.warn("Error showing rewarded ad:", error);
-            if (adTimeout) {
-              clearTimeout(adTimeout);
-              adTimeout = null;
-            }
-            earnBtn.innerHTML = originalText;
-            earnBtn.disabled = false;
-            resetAdState();
-            currentButtonElement = null;
-            currentButtonOriginalText = null;
-          }
-        }
-      },
-      beforeAd: () => {
-        // Called before ad is shown - pause game, mute sound, disable buttons
+    // Use GPT rewarded ads
+    showGptRewardedAd({
+      onStart: () => {
         adCurrentlyShowing = true;
-        // Clear any pending timeout since ad is now showing
         if (adTimeout) {
           clearTimeout(adTimeout);
           adTimeout = null;
         }
       },
-      adViewed: () => {
-        // Ad was fully viewed - player earned the reward
+      onReward: () => {
         adWasViewed = true;
         addCoins(10);
         showToast();
-        // Delay state reset to ensure ad is fully closed (important for longer ads)
         setTimeout(() => {
           adCurrentlyShowing = false;
           if (currentButtonElement) {
@@ -182,16 +222,9 @@ if (earnCoinBtn) {
           resetAdState();
           currentButtonElement = null;
           currentButtonOriginalText = null;
-        }, 1000); // Increased delay for longer ads (30+ seconds)
+        }, 1000);
       },
-      adDismissed: () => {
-        // Ad was dismissed before completion - player did not earn reward
-        console.log("Ad skipped or closed early.");
-        // Don't reset state immediately - wait for afterAd
-      },
-      afterAd: () => {
-        // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
-        // Only reset if ad wasn't viewed (if viewed, adViewed callback handles it)
+      onClosed: () => {
         if (!adWasViewed) {
           adCurrentlyShowing = false;
           if (currentButtonElement) {
@@ -203,11 +236,8 @@ if (earnCoinBtn) {
           currentButtonOriginalText = null;
         }
       },
-      adBreakDone: (placementInfo) => {
-        // Always called even if an ad wasn't shown
-        // If no ad was available, this is the only callback that fires
+      onError: () => {
         if (!adCurrentlyShowing && adLoading) {
-          // No ad was shown - clear timeout and reset
           if (adTimeout) {
             clearTimeout(adTimeout);
             adTimeout = null;
@@ -398,75 +428,24 @@ function showOopsPopup() {
 
     adLoading = true;
 
-    // Check if Ad Placement API is initialized
-    if (typeof adBreak === "undefined") {
-      console.warn(
-        "Ad Placement API not initialized. Make sure the initialization script is included in the HTML head."
-      );
-      if (adTimeout) {
-        clearTimeout(adTimeout);
-        adTimeout = null;
-      }
-      watchBtn.innerHTML = originalText;
-      watchBtn.disabled = false;
-      skipBtn.disabled = false;
-      if (window.clickedGameUrl) window.location.href = window.clickedGameUrl;
-      closeOopsPopup();
-      resetAdState();
-      currentButtonElement = null;
-      currentButtonOriginalText = null;
-      return;
-    }
-
-    // Use adBreak directly for rewarded ads
-    adBreak({
-      type: "reward",
-      name: "earn-coins-popup",
-      beforeReward: (showAdFn) => {
-        // Rewarded ad is available - showAdFn must be called as part of a direct user action
-        if (showAdFn) {
-          try {
-            showAdFn(); // This triggers the ad to show
-          } catch (error) {
-            console.warn("Error showing rewarded ad:", error);
-            if (adTimeout) {
-              clearTimeout(adTimeout);
-              adTimeout = null;
-            }
-            watchBtn.innerHTML = originalText;
-            watchBtn.disabled = false;
-            skipBtn.disabled = false;
-            if (window.clickedGameUrl)
-              window.location.href = window.clickedGameUrl;
-            closeOopsPopup();
-            resetAdState();
-            currentButtonElement = null;
-            currentButtonOriginalText = null;
-          }
-        }
-      },
-      beforeAd: () => {
-        // Called before ad is shown - pause game, mute sound, disable buttons
+    // Use GPT rewarded ads
+    showGptRewardedAd({
+      onStart: () => {
         adCurrentlyShowing = true;
-        // Clear any pending timeout since ad is now showing
         if (adTimeout) {
           clearTimeout(adTimeout);
           adTimeout = null;
         }
       },
-      adViewed: () => {
-        // Ad was fully viewed - player earned the reward
+      onReward: () => {
         adWasViewed = true;
         addCoins(10);
         showToast();
-        // Wait longer for ad to fully close before redirecting (important for 30+ second ads)
         setTimeout(() => {
-          // User earned coins, now redirect to game
           if (window.clickedGameUrl) {
             window.location.href = window.clickedGameUrl;
           }
           closeOopsPopup();
-          // Reset state after redirect is initiated
           adCurrentlyShowing = false;
           if (currentButtonElement) {
             currentButtonElement.innerHTML = currentButtonOriginalText;
@@ -479,17 +458,9 @@ function showOopsPopup() {
           currentButtonElement = null;
           currentButtonOriginalText = null;
           skipBtn = null;
-        }, 1500); // Increased delay for longer ads (30+ seconds) to ensure ad is fully closed
+        }, 1500);
       },
-      adDismissed: () => {
-        // Ad was dismissed before completion - player did not earn reward
-        // Don't redirect - let user decide what to do
-        console.log("Ad dismissed - no reward earned");
-        // Don't reset state immediately - wait for afterAd
-      },
-      afterAd: () => {
-        // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
-        // Only reset if ad wasn't viewed (if viewed, adViewed callback handles it)
+      onClosed: () => {
         if (!adWasViewed) {
           adCurrentlyShowing = false;
           if (currentButtonElement) {
@@ -505,11 +476,8 @@ function showOopsPopup() {
           skipBtn = null;
         }
       },
-      adBreakDone: (placementInfo) => {
-        // Always called even if an ad wasn't shown
-        // If no ad was available, this is the only callback that fires
+      onError: () => {
         if (!adCurrentlyShowing && adLoading) {
-          // No ad was shown - clear timeout and redirect
           if (adTimeout) {
             clearTimeout(adTimeout);
             adTimeout = null;
@@ -573,67 +541,20 @@ if (playGameBtn) {
       }
     }, 7000);
 
-    // Check if Ad Placement API is initialized
-    if (typeof adBreak === "undefined") {
-      console.warn(
-        "Ad Placement API not initialized. Make sure the initialization script is included in the HTML head."
-      );
-      if (adTimeout) {
-        clearTimeout(adTimeout);
-        adTimeout = null;
-      }
-      playGameBtn.innerHTML = originalText;
-      playGameBtn.disabled = false;
-      ErrorToast();
-      if (playOverlay) {
-        playOverlay.remove();
-      }
-      resetAdState();
-      currentButtonElement = null;
-      currentButtonOriginalText = null;
-      return;
-    }
-
-    // Use adBreak directly for rewarded ads
-    adBreak({
-      type: "reward",
-      name: "play-game",
-      beforeReward: (showAdFn) => {
-        // Rewarded ad is available - showAdFn must be called as part of a direct user action
-        if (showAdFn) {
-          try {
-            showAdFn(); // This triggers the ad to show
-          } catch (error) {
-            console.warn("Error showing rewarded ad:", error);
-            if (adTimeout) {
-              clearTimeout(adTimeout);
-              adTimeout = null;
-            }
-            playGameBtn.innerHTML = originalText;
-            playGameBtn.disabled = false;
-            resetAdState();
-            currentButtonElement = null;
-            currentButtonOriginalText = null;
-          }
-        }
-      },
-      beforeAd: () => {
-        // Called before ad is shown - pause game, mute sound, disable buttons
+    // Use GPT rewarded ads
+    showGptRewardedAd({
+      onStart: () => {
         adCurrentlyShowing = true;
-        // Clear any pending timeout since ad is now showing
         if (adTimeout) {
           clearTimeout(adTimeout);
           adTimeout = null;
         }
       },
-      adViewed: () => {
-        // Ad was fully viewed - remove play-overlay
+      onReward: () => {
         adWasViewed = true;
-        // Remove play-overlay after ad is viewed
         if (playOverlay) {
           playOverlay.remove();
         }
-        // Delay state reset to ensure ad is fully closed (important for longer ads)
         setTimeout(() => {
           adCurrentlyShowing = false;
           if (currentButtonElement) {
@@ -643,16 +564,9 @@ if (playGameBtn) {
           resetAdState();
           currentButtonElement = null;
           currentButtonOriginalText = null;
-        }, 1000); // Increased delay for longer ads (30+ seconds)
+        }, 1000);
       },
-      adDismissed: () => {
-        // Ad was dismissed before completion - player did not earn reward
-        console.log("Ad skipped or closed early.");
-        // Don't reset state immediately - wait for afterAd
-      },
-      afterAd: () => {
-        // Called after ad is dismissed - resume game, unmute sound, re-enable buttons
-        // Only reset if ad wasn't viewed (if viewed, adViewed callback handles it)
+      onClosed: () => {
         if (!adWasViewed) {
           adCurrentlyShowing = false;
           if (currentButtonElement) {
@@ -664,11 +578,8 @@ if (playGameBtn) {
           currentButtonOriginalText = null;
         }
       },
-      adBreakDone: (placementInfo) => {
-        // Always called even if an ad wasn't shown
-        // If no ad was available, this is the only callback that fires
+      onError: () => {
         if (!adCurrentlyShowing && adLoading) {
-          // No ad was shown - clear timeout and reset
           if (adTimeout) {
             clearTimeout(adTimeout);
             adTimeout = null;
