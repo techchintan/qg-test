@@ -85,31 +85,24 @@
       crossorigin="anonymous"
     />
 
-    <!-- Preconnect to Google's Ad Server for faster connection -->
-    <link rel="preconnect" href="https://pagead2.googlesyndication.com/" />
-    <link rel="preconnect" href="https://googleads.g.doubleclick.net/" />
-    <link rel="preconnect" href="https://tpc.googlesyndication.com/" />
-
-    <!-- Preload AdSense script for early loading -->
-    <link
-      rel="preload"
-      href="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-      as="script"
-    />
-
-    <!-- AdSense script -->
+    <!-- Banner ads (GPT) -->
     <script
       async
-      data-ad-frequency-hint="30s"
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4788685016218460"
+      src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"
       crossorigin="anonymous"
     ></script>
-
-    <!-- Ad Placement API -->
     <script>
-      window.adsbygoogle = window.adsbygoogle || [];
-      var adBreak = (adConfig = function (o) {
-        adsbygoogle.push(o);
+      window.googletag = window.googletag || { cmd: [] };
+      googletag.cmd.push(function () {
+        googletag
+          .defineSlot(
+            "/21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_300x250_1",
+            [300, 250],
+            "div-gpt-ad-1772705316169-0"
+          )
+          .addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
       });
     </script>
     <style>
@@ -179,20 +172,19 @@
                 </div>
               </div>
             </div>
-            <!-- ! QwiQ Games display ads -->
+            <!-- Banner Ad 300x250_1 -->
             <div class="ad-container">
-              <ins
-                class="adsbygoogle"
-                style="display: block"
-                data-ad-client="ca-pub-4788685016218460"
-                data-ad-slot="8597806557"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-                id="qgDisplayAd"
-              ></ins>
-              <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </script>
+              <!-- /21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_300x250_1 -->
+              <div
+                id="div-gpt-ad-1772705316169-0"
+                style="min-width: 300px; min-height: 250px"
+              >
+                <script>
+                  googletag.cmd.push(function () {
+                    googletag.display("div-gpt-ad-1772705316169-0");
+                  });
+                </script>
+              </div>
               <span class="ad-name">ADVERTISEMENT</span>
             </div>
 
