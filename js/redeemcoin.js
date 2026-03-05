@@ -28,38 +28,38 @@ function showGptInterstitial({ onShown, onError } = {}) {
   window.googletag = window.googletag || { cmd: [] };
   ensureGptBaseInitialized();
 
-  // Create or show a full-screen overlay that will host
-  // a standard GPT display slot for the start interstitial.
   const slotContainerId = "gpt-start-interstitial-slot";
-  let overlay = document.getElementById("gpt-start-interstitial-overlay");
-
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.id = "gpt-start-interstitial-overlay";
-    overlay.style.cssText =
-      "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;";
-    overlay.innerHTML = `
-      <div id="${slotContainerId}" style="position:relative;width:320px;height:480px;background:#000;">
-        <button id="gpt-start-interstitial-close" style="position:absolute;top:8px;right:8px;z-index:2;">✕</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    const closeBtn = document.getElementById("gpt-start-interstitial-close");
-    if (closeBtn) {
-      closeBtn.addEventListener("click", () => {
-        overlay.style.display = "none";
-      });
-    }
-  } else {
-    overlay.style.display = "flex";
-  }
-
   googletag.cmd.push(function () {
     try {
       const pubads = googletag.pubads();
 
       if (!interstitialSlot) {
+        // Create the overlay + container once, but keep it hidden
+        let overlay = document.getElementById(
+          "gpt-start-interstitial-overlay"
+        );
+        if (!overlay) {
+          overlay = document.createElement("div");
+          overlay.id = "gpt-start-interstitial-overlay";
+          overlay.style.cssText =
+            "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;";
+          overlay.innerHTML = `
+            <div id="${slotContainerId}" style="position:relative;width:320px;height:480px;background:#000;">
+              <button id="gpt-start-interstitial-close" style="position:absolute;top:8px;right:8px;z-index:2;">✕</button>
+            </div>
+          `;
+          document.body.appendChild(overlay);
+
+          const closeBtn = document.getElementById(
+            "gpt-start-interstitial-close"
+          );
+          if (closeBtn) {
+            closeBtn.addEventListener("click", () => {
+              overlay.style.display = "none";
+            });
+          }
+        }
+
         interstitialSlot = googletag
           .defineSlot(
             "/21902364955,23012459894/CM_qwiqgames.com_Games_And_Entertainment_Top/CM_qwiqgames.com_Games_And_Entertainment_Interstitial",
@@ -67,6 +67,19 @@ function showGptInterstitial({ onShown, onError } = {}) {
             slotContainerId
           )
           .addService(pubads);
+
+        // Only show the overlay when the ad has actually loaded
+        pubads.addEventListener("slotOnload", function (event) {
+          if (event.slot === interstitialSlot) {
+            const overlayEl = document.getElementById(
+              "gpt-start-interstitial-overlay"
+            );
+            if (overlayEl) {
+              overlayEl.style.display = "flex";
+            }
+            if (onShown) onShown();
+          }
+        });
       }
 
       if (!interstitialSlot) {
@@ -78,7 +91,6 @@ function showGptInterstitial({ onShown, onError } = {}) {
         return;
       }
 
-      if (onShown) onShown();
       googletag.display(slotContainerId);
     } catch (e) {
       console.warn("Error showing interstitial ad:", e);
